@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using NLog.Web;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,25 +16,20 @@ namespace FinancesApi
     {
         public static void Main(string[] args)
         {
-            var host = CreateHostBuilder(args).Build();
-            using (var scope = host.Services.CreateScope())
+            var logger = NLogBuilder.ConfigureNLog("NLog.config").GetCurrentClassLogger();
+            try
             {
-                var services = scope.ServiceProvider;
-
-                try
-                {
-                    //var logger = services.GetRequiredService<ILogger<Program>>();
-                    //logger.LogInformation("DB was seeded");
-                    var context = scope.ServiceProvider.GetRequiredService<FinancesContext>();
-                    DataSample.SeedDb(context);
-                }
-                catch (Exception ex)
-                {
-                    //var logger = services.GetRequiredService<ILogger<Program>>();
-                    //logger.LogError(ex, "An error occurred seeding the DB.");
-                }
+                logger.Debug("init main");
+                CreateHostBuilder(args).Build().Run();
             }
-            host.Run();
+            catch (Exception exception)
+            {
+                logger.Error(exception, "Stopped program because of exception");
+            }
+            finally
+            {
+                NLog.LogManager.Shutdown();
+            }
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -41,6 +37,12 @@ namespace FinancesApi
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                });
+                })
+                .ConfigureLogging(logging =>
+                {
+                    logging.ClearProviders();
+                    logging.SetMinimumLevel(LogLevel.Debug);
+                })
+                .UseNLog();  // NLog: Setup NLog for Dependency injection
     }
 }

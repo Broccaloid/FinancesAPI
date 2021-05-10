@@ -1,4 +1,5 @@
 using FinancesApi.Models;
+using FinancesApi.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -30,6 +31,7 @@ namespace FinancesApi
             services.AddDbContext<FinancesContext>(options => options.UseSqlServer(connection));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddControllers();
+            services.AddTransient<IStatementCalculator, StatementCalculator>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

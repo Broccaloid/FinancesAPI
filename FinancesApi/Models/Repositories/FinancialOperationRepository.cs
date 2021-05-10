@@ -15,7 +15,7 @@ namespace FinancesApi.Models
         public FinancialOperationRepository(FinancesContext context) : base(context) { }
         public IEnumerable<FinancialOperation> GetAllByDate(DateTime date)
         {
-            return FinancesContext.FinancialOperations.Where(f => f.Date == date);
+            return GetAllByDateRange(date, date);
         }
 
         public IEnumerable<FinancialOperation> GetAllByDateRange(DateTime dateStart, DateTime dateEnd)
