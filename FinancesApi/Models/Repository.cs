@@ -16,17 +16,17 @@ namespace FinancesApi.Models
         }
         public void Add(T entity)
         {
-            throw new NotImplementedException();
+            context.Set<T>().Add(entity);
         }
 
         public void AddRange(IEnumerable<T> entities)
         {
-            throw new NotImplementedException();
+            context.Set<T>().AddRange(entities); ;
         }
 
         public IEnumerable<T> GetAll()
         {
-            throw new NotImplementedException();
+            return context.Set<T>().ToList();
         }
 
         public T GetById(int? id)
@@ -36,12 +36,12 @@ namespace FinancesApi.Models
 
         public void Remove(T entity)
         {
-            throw new NotImplementedException();
+            context.Set<T>().Remove(entity);
         }
 
         public void RemoveRange(IEnumerable<T> entities)
         {
-            throw new NotImplementedException();
+            context.Set<T>().RemoveRange(entities);
         }
     }
 }

@@ -5,7 +5,10 @@ using System.Threading.Tasks;
 
 namespace FinancesApi.Models
 {
-    interface IUnitOfWork
+    public interface IUnitOfWork
     {
+        IFinancialOperationRepository FinancialOperations { get; }
+
+        public void Save();
     }
 }

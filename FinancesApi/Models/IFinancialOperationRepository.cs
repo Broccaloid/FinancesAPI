@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 
 namespace FinancesApi.Models
 {
-    interface IFinancialOperationRepository : IRepository<FinancialOperation>
+    public interface IFinancialOperationRepository : IRepository<FinancialOperation>
     {
-        IEnumerable<FinancialOperation> GetAllByDate(string date);
-        IEnumerable<FinancialOperation> GetAllByDateRange(string dateStart, string dateEnd);
+        IEnumerable<FinancialOperation> GetAllByDate(DateTime date);
+        IEnumerable<FinancialOperation> GetAllByDateRange(DateTime dateStart, DateTime dateEnd);
         IEnumerable<FinancialOperation> GetAllByType(string type);
     }
 }
