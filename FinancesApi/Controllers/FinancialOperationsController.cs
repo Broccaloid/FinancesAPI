@@ -1,6 +1,7 @@
 ﻿using FinancesApi.Models;
 using FinancesApi.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,63 +15,109 @@ namespace FinancesApi.Controllers
     {
         public IUnitOfWork UnitOfWork { get; }
         public IStatementCalculator StatementCalculator { get; }
+        public ILogger Logger { get; }
 
-        public FinancialOperationsController(IUnitOfWork unitOfWork, IStatementCalculator statementCalculator)
+        public FinancialOperationsController(IUnitOfWork unitOfWork, IStatementCalculator statementCalculator, ILogger<FinancialOperationsController> logger)
         {
+            Logger = logger;
             StatementCalculator = statementCalculator;
             UnitOfWork = unitOfWork;
         }
 
         [HttpGet]
-        public IEnumerable<FinancialOperation> GetAllOperations()
+        public ActionResult<IEnumerable<FinancialOperation>> GetAllOperations()
         {
-            return UnitOfWork.FinancialOperations.GetAll();
+            Logger.LogInformation("GetAllOperation was called");
+            var result = UnitOfWork.FinancialOperations.GetAll();
+            if (result.ToList().Count == 0)
+            {
+                Logger.LogWarning("No operations were found");
+                return NotFound();
+            }
+            return Ok(result);
         }
 
         [HttpGet]
         [Route("allincomes")]
-        public IEnumerable<FinancialOperation> GetAllIncomes()
+        public ActionResult<IEnumerable<FinancialOperation>> GetAllIncomes()
         {
-            return UnitOfWork.FinancialOperations.GetAll().Where(o => o.BalanceChange > 0);
+            Logger.LogInformation("GetAllIncomes was called");
+            var result = UnitOfWork.FinancialOperations.GetAll().Where(o => o.BalanceChange > 0);
+            if (result.ToList().Count == 0)
+            {
+                Logger.LogWarning("No operations were found");
+                return NotFound();
+            }
+            return Ok(result);
         }
 
         [HttpGet]
         [Route("allexpenses")]
-        public IEnumerable<FinancialOperation> GetAllExpenses()
+        public ActionResult<IEnumerable<FinancialOperation>> GetAllExpenses()
         {
-            return UnitOfWork.FinancialOperations.GetAll().Where(o => o.BalanceChange < 0);
+            Logger.LogInformation("GetAllExpenses was called");
+            var result = UnitOfWork.FinancialOperations.GetAll().Where(o => o.BalanceChange < 0);
+            if (result.ToList().Count == 0)
+            {
+                Logger.LogWarning("No operations were found");
+                return NotFound();
+            }
+            return Ok(result);
         }
 
         [HttpGet]
         [Route("financialstatement")]
-        public FinancialStatement GetFinancialStatementForTimePeriod(DateTime dateStart, DateTime dateEnd)
+        public ActionResult<FinancialStatement> GetFinancialStatementForTimePeriod(DateTime dateStart, DateTime dateEnd)
         {
-            return StatementCalculator.CaluculateStatement(dateStart, dateEnd);
+            Logger.LogInformation("GetFinancialStatementForTimePeriod was called");
+            var result = StatementCalculator.CaluculateStatement(dateStart, dateEnd);
+            if (result.FinancialOperations.Count == 0)
+            {
+                Logger.LogWarning("No operations were found");
+                return NotFound();
+            }
+            return Ok(result);
         }
 
         [HttpGet]
         [Route("dailyfinancialstatement")]
-        public FinancialStatement GetDailyFinancialStatement(DateTime date)
+        public ActionResult<FinancialStatement> GetDailyFinancialStatement(DateTime date)
         {
-            return StatementCalculator.CaluculateStatement(date, date);
+            Logger.LogInformation("GetDailyFinancialStatement was called");
+            var result = StatementCalculator.CaluculateStatement(date, date);
+            if (result.FinancialOperations.Count == 0)
+            {
+                Logger.LogWarning("No operations were found");
+                return NotFound();
+            }
+            return Ok(result);
         }
 
         [HttpPost]
-        [Route("addoperations")]
+        [Route("addmanyoperations")]
         public ActionResult<FinancialOperation> AddListOfOperations([FromBody] List<FinancialOperation> financialOperations)
         {
-            foreach (var operation in financialOperations)
+            Logger.LogInformation("AddListOfOperations was called");
+            if (financialOperations == null || financialOperations.Count == 0)
             {
-                UnitOfWork.FinancialOperations.Add(operation);
+                Logger.LogWarning("Incorrect request");
+                return BadRequest();
             }
+            UnitOfWork.FinancialOperations.AddRange(financialOperations);
             UnitOfWork.Save();
             return Ok(financialOperations);
         }
 
         [HttpPost]
-        [Route("addmanyoperation")]
+        [Route("addoperation")]
         public ActionResult<FinancialOperation> AddOperation([FromBody] FinancialOperation financialOperation)
         {
+            Logger.LogInformation("AddOperation was called");
+            if (financialOperation == null)
+            {
+                Logger.LogWarning("Incorrect request");
+                return BadRequest();
+            }
             UnitOfWork.FinancialOperations.Add(financialOperation);
             UnitOfWork.Save();
             return Ok(financialOperation);
@@ -80,22 +127,38 @@ namespace FinancesApi.Controllers
         [Route("changeoperation")]
         public ActionResult<FinancialOperation> ChangeOperation([FromBody] FinancialOperation financialOperation)
         {
-            UnitOfWork.FinancialOperations.GetById(financialOperation.Id).BalanceChange = financialOperation.BalanceChange;
-            UnitOfWork.FinancialOperations.GetById(financialOperation.Id).Date = financialOperation.Date;
-            UnitOfWork.FinancialOperations.GetById(financialOperation.Id).Type = financialOperation.Type;
-            UnitOfWork.Save();
-            return Ok(financialOperation);
+            Logger.LogInformation("ChangeOperation was called");
+            if (financialOperation == null)
+            {
+                Logger.LogWarning("Incorrect request");
+                return BadRequest();
+            }
+            return ChangeListOfOperation(new List<FinancialOperation>() { financialOperation});
         }
 
         [HttpPut]
         [Route("changemanyoperations")]
         public ActionResult<FinancialOperation> ChangeListOfOperation([FromBody] List<FinancialOperation> financialOperations)
         {
+            Logger.LogInformation("ChangeListOfOperation was called");
+            if (financialOperations == null || financialOperations.Count == 0)
+            {
+                Logger.LogWarning("Incorrect request");
+                return BadRequest();
+            }
             foreach (var operation in financialOperations)
             {
-                UnitOfWork.FinancialOperations.GetById(operation.Id).BalanceChange = operation.BalanceChange;
-                UnitOfWork.FinancialOperations.GetById(operation.Id).Date = operation.Date;
-                UnitOfWork.FinancialOperations.GetById(operation.Id).Type = operation.Type;
+                try
+                {
+                    UnitOfWork.FinancialOperations.GetById(operation.Id).BalanceChange = operation.BalanceChange;
+                    UnitOfWork.FinancialOperations.GetById(operation.Id).Date = operation.Date;
+                    UnitOfWork.FinancialOperations.GetById(operation.Id).Type = operation.Type;
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogWarning(ex, "Error occurred");
+                    return NotFound(operation);
+                }
             }
             UnitOfWork.Save();
             return Ok(financialOperations);
@@ -103,21 +166,37 @@ namespace FinancesApi.Controllers
 
         [HttpDelete]
         [Route("deleteoperation")]
-        public void DeleteOperation([FromBody] FinancialOperation financialOperation)
+        public ActionResult DeleteOperation([FromBody] FinancialOperation financialOperation)
         {
-            UnitOfWork.FinancialOperations.Remove(financialOperation);
-            UnitOfWork.Save();
+            Logger.LogInformation("DeleteOperation was called");
+            if (financialOperation == null)
+            {
+                Logger.LogWarning("Incorrect request");
+                return BadRequest();
+            }
+            return DeleteListOfOperations(new List<FinancialOperation>() { financialOperation });
         }
 
         [HttpDelete]
         [Route("deletemanyoperations")]
-        public void DeleteListOfOperations([FromBody] List<FinancialOperation> financialOperations)
+        public ActionResult DeleteListOfOperations([FromBody] List<FinancialOperation> financialOperations)
         {
-            foreach (var operation in financialOperations)
+            Logger.LogInformation("DeleteListOfOperations was called");
+            if (financialOperations == null || financialOperations.Count == 0)
             {
-                UnitOfWork.FinancialOperations.Remove(operation);
+                Logger.LogWarning("Incorrect request");
+                return BadRequest();
             }
-            UnitOfWork.Save();
+            try
+            {
+                UnitOfWork.FinancialOperations.RemoveRange(financialOperations);
+                UnitOfWork.Save();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Error occurred");
+            }
+            return NoContent();
         }
     }
 }

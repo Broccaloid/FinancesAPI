@@ -43,6 +43,6 @@ namespace FinancesApi
                     logging.ClearProviders();
                     logging.SetMinimumLevel(LogLevel.Debug);
                 })
-                .UseNLog();  // NLog: Setup NLog for Dependency injection
+                .UseNLog();
     }
 }
