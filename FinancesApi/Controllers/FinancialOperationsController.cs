@@ -38,7 +38,7 @@ namespace FinancesApi.Controllers
         }
 
         [HttpGet]
-        [Route("allincomes")]
+        [Route("incomes")]
         public ActionResult<IEnumerable<FinancialOperation>> GetAllIncomes()
         {
             Logger.LogInformation("GetAllIncomes was called");
@@ -52,7 +52,7 @@ namespace FinancesApi.Controllers
         }
 
         [HttpGet]
-        [Route("allexpenses")]
+        [Route("expenses")]
         public ActionResult<IEnumerable<FinancialOperation>> GetAllExpenses()
         {
             Logger.LogInformation("GetAllExpenses was called");
@@ -66,7 +66,7 @@ namespace FinancesApi.Controllers
         }
 
         [HttpGet]
-        [Route("financialstatement")]
+        [Route("finance")]
         public ActionResult<FinancialStatement> GetFinancialStatementForTimePeriod(DateTime dateStart, DateTime dateEnd)
         {
             Logger.LogInformation("GetFinancialStatementForTimePeriod was called");
@@ -80,7 +80,7 @@ namespace FinancesApi.Controllers
         }
 
         [HttpGet]
-        [Route("dailyfinancialstatement")]
+        [Route("finance/daily")]
         public ActionResult<FinancialStatement> GetDailyFinancialStatement(DateTime date)
         {
             Logger.LogInformation("GetDailyFinancialStatement was called");
@@ -94,14 +94,13 @@ namespace FinancesApi.Controllers
         }
 
         [HttpPost]
-        [Route("addmanyoperations")]
+        [Route("operation/list")]
         public ActionResult<FinancialOperation> AddListOfOperations([FromBody] List<FinancialOperation> financialOperations)
         {
-            Logger.LogInformation("AddListOfOperations was called");
             if (financialOperations == null || financialOperations.Count == 0)
             {
                 Logger.LogWarning("Incorrect request");
-                return BadRequest();
+                return BadRequest("No values were sent");
             }
             UnitOfWork.FinancialOperations.AddRange(financialOperations);
             UnitOfWork.Save();
@@ -109,14 +108,13 @@ namespace FinancesApi.Controllers
         }
 
         [HttpPost]
-        [Route("addoperation")]
+        [Route("operation")]
         public ActionResult<FinancialOperation> AddOperation([FromBody] FinancialOperation financialOperation)
         {
-            Logger.LogInformation("AddOperation was called");
             if (financialOperation == null)
             {
                 Logger.LogWarning("Incorrect request");
-                return BadRequest();
+                return BadRequest("No values were sent");
             }
             UnitOfWork.FinancialOperations.Add(financialOperation);
             UnitOfWork.Save();
@@ -124,40 +122,39 @@ namespace FinancesApi.Controllers
         }
 
         [HttpPut]
-        [Route("changeoperation")]
+        [Route("operation")]
         public ActionResult<FinancialOperation> ChangeOperation([FromBody] FinancialOperation financialOperation)
         {
-            Logger.LogInformation("ChangeOperation was called");
             if (financialOperation == null)
             {
                 Logger.LogWarning("Incorrect request");
-                return BadRequest();
+                return BadRequest("No values were sent");
             }
             return ChangeListOfOperation(new List<FinancialOperation>() { financialOperation});
         }
 
         [HttpPut]
-        [Route("changemanyoperations")]
+        [Route("operation/list")]
         public ActionResult<FinancialOperation> ChangeListOfOperation([FromBody] List<FinancialOperation> financialOperations)
         {
-            Logger.LogInformation("ChangeListOfOperation was called");
             if (financialOperations == null || financialOperations.Count == 0)
             {
                 Logger.LogWarning("Incorrect request");
-                return BadRequest();
+                return BadRequest("No values were sent");
             }
             foreach (var operation in financialOperations)
             {
                 try
                 {
-                    UnitOfWork.FinancialOperations.GetById(operation.Id).BalanceChange = operation.BalanceChange;
-                    UnitOfWork.FinancialOperations.GetById(operation.Id).Date = operation.Date;
-                    UnitOfWork.FinancialOperations.GetById(operation.Id).Type = operation.Type;
+                    var operationForChange = UnitOfWork.FinancialOperations.GetById(operation.Id);
+                    operationForChange.BalanceChange = operation.BalanceChange;
+                    operationForChange.Date = operation.Date;
+                    operationForChange.Type = operation.Type;
                 }
                 catch (Exception ex)
                 {
                     Logger.LogWarning(ex, "Error occurred");
-                    return NotFound(operation);
+                    return StatusCode(500);
                 }
             }
             UnitOfWork.Save();
@@ -165,14 +162,13 @@ namespace FinancesApi.Controllers
         }
 
         [HttpDelete]
-        [Route("deleteoperation")]
+        [Route("operation")]
         public ActionResult DeleteOperation([FromBody] FinancialOperation financialOperation)
         {
-            Logger.LogInformation("DeleteOperation was called");
             if (financialOperation == null)
             {
                 Logger.LogWarning("Incorrect request");
-                return BadRequest();
+                return BadRequest("No values were sent");
             }
             try
             {
@@ -182,19 +178,19 @@ namespace FinancesApi.Controllers
             catch (Exception ex)
             {
                 Logger.LogWarning(ex, "Error occurred");
+                return StatusCode(500);
             }
             return NoContent();
         }
 
         [HttpDelete]
-        [Route("deletemanyoperations")]
+        [Route("operation/list")]
         public ActionResult DeleteListOfOperations([FromBody] List<FinancialOperation> financialOperations)
         {
-            Logger.LogInformation("DeleteListOfOperations was called");
             if (financialOperations == null || financialOperations.Count == 0)
             {
                 Logger.LogWarning("Incorrect request");
-                return BadRequest();
+                return BadRequest("No values were sent");
             }
             try
             {
@@ -204,6 +200,7 @@ namespace FinancesApi.Controllers
             catch (Exception ex)
             {
                 Logger.LogWarning(ex, "Error occurred");
+                return StatusCode(500);
             }
             return NoContent();
         }
