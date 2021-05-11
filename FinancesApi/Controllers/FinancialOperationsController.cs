@@ -174,7 +174,16 @@ namespace FinancesApi.Controllers
                 Logger.LogWarning("Incorrect request");
                 return BadRequest();
             }
-            return DeleteListOfOperations(new List<FinancialOperation>() { financialOperation });
+            try
+            {
+                UnitOfWork.FinancialOperations.Remove(financialOperation);
+                UnitOfWork.Save();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Error occurred");
+            }
+            return NoContent();
         }
 
         [HttpDelete]

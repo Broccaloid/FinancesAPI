@@ -34,7 +34,7 @@ namespace FinancesApi.Services
             return new FinancialStatement
             {
                 FinancialOperations = financialOperations,
-                TotalExpense = totalExpense,
+                TotalExpense = totalExpense * -1,
                 TotalIncome = totalIncome
             };
         }
